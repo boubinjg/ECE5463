@@ -27,16 +27,28 @@ def init():
     fbx=fbo+np.array([1, 0, 0])
     fby=fbo+np.array([0, 1, 0])
     fbz=fbo+np.array([0, 0, 1])
+    fpb = np.array([1,2,3])
+    fs = [1,0,0]
+
     xb = Arrow3D([fbo[0],fbx[0]],[fbo[1],fbx[1]],[fbo[2],fbx[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="k")
     yb = Arrow3D([fbo[0],fby[0]],[fbo[1],fby[1]],[fbo[2],fby[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="b")
     zb = Arrow3D([fbo[0],fbz[0]],[fbo[1],fbz[1]],[fbo[2],fbz[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="r")
+    pb = Arrow3D([fbo[0],fbz[0]],[fbo[1],fbz[1]],[fbo[2],fbz[2]], mutation_scale=15, lw=2, arrowstyle="-|>",color="r")
+    ps = Arrow3D([1,fs[0]],[1,fs[1]],[1,fs[2]], mutation_scale=15, lw=2, arrowstyle="-|>",color="r")
+
+
     ax.add_artist(xb)
     ax.add_artist(yb)
     ax.add_artist(zb)
-    return xb, yb, zb
+    ax.add_artist(pb)
+    ax.add_artist(ps)
+    return xb, yb, zb, pb, ps
 
 def animate(i):
     #fbo=np.array([1+i/10, 1+i/10, 1+i/10])
+    Tnew = screwMotion(s,h,q,theta+(i/25),T0)
+    fpb = np.transpose(Tnew)*[[1],[2],[3],[1]]
+
     fbo=np.array([Tnew[0,3],Tnew[1,3],Tnew[2,3]])
     fbx=fbo+np.array([Tnew[0,0], Tnew[0,1], Tnew[0,2]])
     fby=fbo+np.array([Tnew[1,0], Tnew[1,1], Tnew[1,2]])
@@ -44,10 +56,15 @@ def animate(i):
     xb = Arrow3D([fbo[0],fbx[0]],[fbo[1],fbx[1]],[fbo[2],fbx[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="k")
     yb = Arrow3D([fbo[0],fby[0]],[fbo[1],fby[1]],[fbo[2],fby[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="b")
     zb = Arrow3D([fbo[0],fbz[0]],[fbo[1],fbz[1]],[fbo[2],fbz[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="r")
+    pb = Arrow3D([fbo[0],fpb[0]],[fbo[1],fpb[1]],[fbo[2],fpb[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="g")
+    ps = Arrow3D([0,2*s[0]],[0,2*s[1]],[0,2*s[2]], mutation_scale=15, lw=2, arrowstyle="-|>", color="m")
+
     ax.add_artist(xb)
     ax.add_artist(yb)
     ax.add_artist(zb)
-    return xb, yb, zb
+    ax.add_artist(pb)
+    ax.add_artist(ps)
+    return xb, yb, zb, pb, ps
 
 I = np.matrix('1,0,0; 0,1,0 ; 0,0,1')
 
@@ -96,39 +113,41 @@ def expConfig(S, theta, T0):
 
         return Tnew
 
-S = [0,0,0,1,0,0]
-theta = 1;
-T0 = np.matrix([[1,0,0,5],
-                [0,1,0,4],
-                [0,0,1,3],
-                [0,0,0,1]])
-
 def screwMotion(s,h,q,theta,T0):
     #convert s,h,q to a format for the previous func
-    w = s*theta
-    v =
+    w = s
+    v = np.multiply(-1, (np.cross(w,q))) + np.multiply(h, w)
 
+    S = (np.concatenate((w, v), axis=0))
+    print(S)
+    Tnew = expConfig(S, theta, T0)
+    print("TNEW ============")
+    print(Tnew)
+    return Tnew
 
+#S = [0,0,0,1,0,0]
+theta = 1
+T0 = np.matrix([[0,1,0,0],
+                [0,0,1,0],
+                [1,0,0,0],
+                [0,0,0,1]])
 
-#print(T0)
-print("S: ")
-print(S);
-print("Theta: ")
-print(theta)
-print("T0: ")
-print(T0)
-Tnew = expConfig(S,theta,T0)
-print("Tnew: ")
-print(Tnew)
+s = [1,0,0]
+q = [0,0,1]
+
+h = 1
+theta = .5
+screwMotion(s,h,q,theta,T0)
+
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 ax.view_init(azim=30)
-ax.set_xlim3d(3,10)
-ax.set_ylim3d(3,10)
-ax.set_zlim3d(3,10)
+ax.set_xlim3d(-3,3)
+ax.set_ylim3d(-3,3)
+ax.set_zlim3d(-3,3)
 ax.set_aspect("equal")
 
-ani = animation.FuncAnimation(fig, animate, np.arange(0, 50), interval=50, blit=True, init_func=init)
+ani = animation.FuncAnimation(fig, animate, np.arange(0, 100), interval=25, blit=True, init_func=init)
 
 plt.show()
